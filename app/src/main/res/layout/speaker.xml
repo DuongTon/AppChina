@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/fr_speaker"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:visibility="visible">
+
+    <ImageView
+        android:id="@+id/img_level_sound"
+        android:layout_width="@dimen/height_progress_voice_bg"
+        android:layout_height="@dimen/height_progress_voice_bg"
+        android:layout_gravity="center"
+        android:contentDescription="@string/img"
+        android:src="@drawable/ic_recurrence_bubble_disabled"
+        android:visibility="gone" />
+
+    <ImageView
+        android:id="@+id/img_bg_micro_boder"
+        android:layout_width="@dimen/height_progress_voice_boder"
+        android:layout_height="@dimen/height_progress_voice_boder"
+        android:layout_gravity="center"
+        android:contentDescription="@string/img"
+        android:src="@drawable/ic_recurrence_bubble_fill"
+        android:visibility="gone" />
+
+    <ImageView
+        android:id="@+id/img_bg_micro"
+        android:layout_width="@dimen/height_progress_voice"
+        android:layout_height="@dimen/height_progress_voice"
+        android:layout_gravity="center"
+        android:contentDescription="@string/img"
+        android:src="@drawable/ic_recurrence_bubble_fill"
+        android:visibility="gone" />
+
+    <ImageView
+        android:id="@+id/img_micro"
+        android:layout_width="@dimen/height_progress_voice"
+        android:layout_height="@dimen/height_progress_voice"
+        android:layout_gravity="center"
+        android:contentDescription="@string/img"
+        android:src="@drawable/microphone_control" />
+</FrameLayout>
