@@ -1,7 +1,9 @@
 package com.viking.appchina;
 
+import android.Manifest;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
@@ -20,13 +22,16 @@ import java.util.TimerTask;
 
 public class PracticePhraseActivity extends AppCompatActivity {
 
-    int countSpeech = 0;
-    int indexCurrent = 0;
-    boolean isSearch = false;
-    boolean isSuccessVoice = false;
-    double levelsoundBefore = -2.5d;
-    Speaker speaker;
-    NoPopupVoiceRecognizer voice;
+    private int countSpeech = 0;
+    private int indexCurrent = 0;
+    private boolean isSearch = false;
+    private boolean isSuccessVoice = false;
+    private double levelsoundBefore = -2.5d;
+    private Speaker speaker;
+    private NoPopupVoiceRecognizer voice;
+    private String wordRead = "好";
+    private static final int CODE_SPEAK = 1111;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -36,58 +41,64 @@ public class PracticePhraseActivity extends AppCompatActivity {
         this.speaker.show();
         findViewById(R.id.fr_speaker).setOnClickListener(new View.OnClickListener() {
             public void onClick(View view) {
-                if (ActivityCompat.checkSelfPermission(PracticePhraseActivity.this, "android.permission.RECORD_AUDIO") != 0) {
-                    ActivityCompat.requestPermissions(PracticePhraseActivity.this, new String[]{"android.permission.RECORD_AUDIO"}, 10);
-                } else if (!UtilFunction.isOnline(PracticePhraseActivity.this)) {
-                    // khong co mang
-                } else if (ReferenceControl.isSpeakerError(PracticePhraseActivity.this).booleanValue()) {
-                    PracticePhraseActivity.this.startSpeakerGoogle();
-                } else if (PracticePhraseActivity.this.speaker.isVoicing()) {
-                    if (PracticePhraseActivity.this.voice != null) {
-                        PracticePhraseActivity.this.voice.listen(PracticePhraseActivity.this.getNameSpeech());
-                        PracticePhraseActivity.this.countSpeech++;
-                    }
-                } else {
-                    speaker.moveUp(500);
-                    PracticePhraseActivity practicePhraseActivity = PracticePhraseActivity.this;
-                    StringBuilder sb = new StringBuilder();
-                    sb.append(PracticePhraseActivity.this.getString(R.string.start_speaking));
-                    sb.append(": ");
-                    sb.append("好");
-                    Toast makeText = Toast.makeText(practicePhraseActivity, sb.toString(), Toast.LENGTH_LONG);
-                    makeText.setGravity(17, 0, 0);
-                    makeText.show();
-                    new Timer().schedule(new TimerTask() {
-                        public void run() {
-                            PracticePhraseActivity.this.handlerStartVoice.sendEmptyMessage(0);
-                        }
-                    }, 500);
-                }
+              handleSpeakNow();
             }
         });
     }
+
+    private void handleSpeakNow(){
+        // ActivityCompat.checkSelfPermission(PracticePhraseActivity.this, "android.permission.RECORD_AUDIO") != 0
+        if (ActivityCompat.checkSelfPermission(PracticePhraseActivity.this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(PracticePhraseActivity.this, new String[]{Manifest.permission.RECORD_AUDIO}, 10);
+        } else if (!UtilFunction.isOnline(PracticePhraseActivity.this)) {
+            // khong co mang vui lòng kiểm tra kết nối internet
+        } else if (ReferenceControl.isSpeakerError(PracticePhraseActivity.this).booleanValue()) {
+            PracticePhraseActivity.this.startSpeakerGoogle();
+        } else if (PracticePhraseActivity.this.speaker.isVoicing()) {
+            if (PracticePhraseActivity.this.voice != null) {
+                PracticePhraseActivity.this.voice.listen(PracticePhraseActivity.this.getNameSpeech());
+                PracticePhraseActivity.this.countSpeech++;
+            }
+        } else {
+            speaker.moveUp(500);
+            PracticePhraseActivity practicePhraseActivity = PracticePhraseActivity.this;
+            StringBuilder sb = new StringBuilder();
+            sb.append(PracticePhraseActivity.this.getString(R.string.start_speaking));
+            sb.append(": ");
+            sb.append(wordRead);
+            Toast makeText = Toast.makeText(practicePhraseActivity, sb.toString(), Toast.LENGTH_LONG);
+            makeText.setGravity(17, 0, 0);
+            makeText.show();
+            new Timer().schedule(new TimerTask() {
+                public void run() {
+                    PracticePhraseActivity.this.handlerStartVoice.sendEmptyMessage(0);
+                }
+            }, 500);
+        }
+    }
+
     public void startSpeakerGoogle() {
         Intent intent = new Intent("android.speech.action.RECOGNIZE_SPEECH");
         intent.putExtra("android.speech.extra.LANGUAGE_MODEL", "free_form");
         StringBuilder sb = new StringBuilder();
         sb.append("Speak now:\n");
-        sb.append("好");
+        sb.append(wordRead);
         intent.putExtra("android.speech.extra.PROMPT", sb.toString());
         intent.putExtra("android.speech.extra.LANGUAGE_PREFERENCE", "zh");
         intent.putExtra("android.speech.extra.LANGUAGE", "zh");
         intent.putExtra("android.speech.extra.MAX_RESULTS", 3);
         intent.putExtra("android.speech.extras.SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS", BaseImageDownloader.DEFAULT_HTTP_READ_TIMEOUT);
         try {
-            startActivityForResult(intent, 1111);
+            startActivityForResult(intent, CODE_SPEAK);
         } catch (ActivityNotFoundException unused) {
             Toast.makeText(getApplicationContext(), "Sorry! Speech recognition is not supported in this device.", Toast.LENGTH_SHORT).show();
         }
     }
 
-    /* access modifiers changed from: protected */
+    @Override
     public void onActivityResult(int i, int i2, Intent intent) {
         super.onActivityResult(i, i2, intent);
-        if (i == 1111 && i2 == -1 && intent != null) {
+        if (i == CODE_SPEAK && i2 == -1 && intent != null) {
             double d = -1.0d;
             Iterator it = intent.getStringArrayListExtra("android.speech.extra.RESULTS").iterator();
             while (it.hasNext()) {
@@ -98,7 +109,7 @@ public class PracticePhraseActivity extends AppCompatActivity {
             }
             int i3 = d > 0.92d ? 5 : d > 0.8d ? 4 : d > 0.6d ? 3 : d > 0.4d ? 2 : 1;
             //this.phraseCurrentEntry.setStar(i3);
-           // new BookMarkDB(this).addBookmarkEntry(this.phraseCurrentEntry);
+            // new BookMarkDB(this).addBookmarkEntry(this.phraseCurrentEntry);
             StringBuilder sb = new StringBuilder();
             sb.append(i3);
             sb.append(" star");
@@ -108,15 +119,14 @@ public class PracticePhraseActivity extends AppCompatActivity {
     }
 
     public String getNameSpeech() {
-        return "好".trim().replace("?", "").replace("'", "").trim().replace(".", "").trim().trim().replace(",", "").trim().trim().replace("!", "").trim();
+        return wordRead.trim().replace("?", "").replace("'", "").trim().replace(".", "").trim().trim().replace(",", "").trim().trim().replace("!", "").trim();
     }
-
 
 
     final android.os.Handler handlerStartVoice = new Handler(new Handler.Callback() {
         public boolean handleMessage(Message message) {
             PracticePhraseActivity practicePhraseActivity = PracticePhraseActivity.this;
-             countSpeech = 0;
+            countSpeech = 0;
             startVoice();
             return false;
         }
